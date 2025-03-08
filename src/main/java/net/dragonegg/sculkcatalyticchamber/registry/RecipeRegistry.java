@@ -2,6 +2,7 @@ package net.dragonegg.sculkcatalyticchamber.registry;
 
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
 import net.dragonegg.sculkcatalyticchamber.SculkCatalyticChamber;
+import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberRecipe;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberRecipeSerializer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,9 +27,9 @@ public class RecipeRegistry {
 
     public static final IRecipeTypeInfo CHAMBER = new IRecipeTypeInfo() {
         private static final ResourceLocation id = SculkCatalyticChamber.asResource("chamber");
-        private static final RegistryObject<RecipeSerializer<?>> serializerObject =
+        private static final RegistryObject<RecipeSerializer<ChamberRecipe>> serializerObject =
                 SERIALIZER_REGISTER.register("chamber", ChamberRecipeSerializer::new);
-        private static final RegistryObject<RecipeType<?>> typeObject =
+        private static final RegistryObject<RecipeType<ChamberRecipe>> typeObject =
                 TYPE_REGISTER.register("chamber", () -> RecipeType.simple(id));
 
         @Override
@@ -38,14 +39,14 @@ public class RecipeRegistry {
 
         @SuppressWarnings("unchecked")
         @Override
-        public <T extends RecipeSerializer<?>> T getSerializer() {
-            return (T) serializerObject.get();
+        public RecipeSerializer<ChamberRecipe> getSerializer() {
+            return serializerObject.get();
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public <T extends RecipeType<?>> T getType() {
-            return (T) typeObject.get();
+        public RecipeType<ChamberRecipe> getType() {
+            return typeObject.get();
         }
     };
 

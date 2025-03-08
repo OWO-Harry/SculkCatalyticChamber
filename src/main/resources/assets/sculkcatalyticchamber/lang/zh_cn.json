@@ -6,5 +6,7 @@
   "block.sculkcatalyticchamber.chamber": "催化釜",
   "block.sculkcatalyticchamber.mechanical_shrieker": "动力尖啸体",
 
+  "sculkcatalyticchamber.recipe.chamber": "催化釜",
+
   "sculkcatalyticchamber.gui.goggles.chamber_contents": "催化釜内含:"
 }

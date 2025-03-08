@@ -130,14 +130,14 @@ public class ChamberRecipeBuilder {
         return this;
     }
 
-    public ChamberRecipeBuilder duration(int ticks) {
-        params.processingDuration = ticks;
-        return this;
-    }
-
-    public ChamberRecipeBuilder averageProcessingDuration() {
-        return duration(100);
-    }
+//    public ChamberRecipeBuilder duration(int ticks) {
+//        params.processingDuration = ticks;
+//        return this;
+//    }
+//
+//    public ChamberRecipeBuilder averageProcessingDuration() {
+//        return duration(100);
+//    }
 
     public ChamberRecipeBuilder requiresHeat(HeatCondition condition) {
         params.requiredHeat = condition;
@@ -338,7 +338,7 @@ public class ChamberRecipeBuilder {
         protected double chances;
         protected NonNullList<ProcessingOutput> results;
         protected NonNullList<FluidStack> fluidResults;
-        protected int processingDuration;
+//        protected int processingDuration;
         protected HeatCondition requiredHeat;
 
         protected ChamberRecipeParams(ResourceLocation id) {
@@ -352,7 +352,7 @@ public class ChamberRecipeBuilder {
             chances = 0.0;
             results = NonNullList.create();
             fluidResults = NonNullList.create();
-            processingDuration = 0;
+//            processingDuration = 0;
             requiredHeat = HeatCondition.NONE;
         }
 

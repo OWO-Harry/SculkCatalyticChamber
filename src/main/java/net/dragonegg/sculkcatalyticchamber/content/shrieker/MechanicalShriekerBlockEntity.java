@@ -2,9 +2,9 @@ package net.dragonegg.sculkcatalyticchamber.content.shrieker;
 
 import com.simibubi.create.content.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.foundation.utility.VecHelper;
+import net.dragonegg.sculkcatalyticchamber.SCCConfig;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberBlockEntity;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberOperatingBlockEntity;
-import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberRecipe;
 import net.dragonegg.sculkcatalyticchamber.registry.RecipeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -80,11 +80,9 @@ public class MechanicalShriekerBlockEntity extends ChamberOperatingBlockEntity i
             if ((!level.isClientSide || isVirtual()) && runningTicks == 20) {
                 if (processingTicks < 0) {
                     float recipeSpeed = 1;
-                    if (currentRecipe instanceof ChamberRecipe) {
-                        int t = ((ChamberRecipe) currentRecipe).getProcessingDuration();
-                        if (t != 0)
-                            recipeSpeed = t / 100f;
-                    }
+                    int t = SCCConfig.CHAMBER_SPEED.get();
+                    if (t != 0)
+                        recipeSpeed = t / 100f;
 
                     processingTicks = Mth.clamp((Mth.log2((int) (512 / speed))) * Mth.ceil(recipeSpeed * 15) + 1, 1, 512);
                 } else {

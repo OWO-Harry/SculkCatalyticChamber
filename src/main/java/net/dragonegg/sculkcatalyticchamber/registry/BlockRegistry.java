@@ -74,7 +74,7 @@ public class BlockRegistry {
             .block("mechanical_shrieker", MechanicalShriekerBlock::new)
             .initialProperties(() -> Blocks.SCULK_SHRIEKER)
             .transform(TagGen.axeOrPickaxe())
-            .transform(BlockStressDefaults.setImpact(8.0))
+            .transform(BlockStressDefaults.setImpact(40.0))
             .item()
             .transform(customItemModel())
             .register();

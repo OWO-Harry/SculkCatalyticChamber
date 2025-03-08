@@ -6,5 +6,7 @@
   "block.sculkcatalyticchamber.chamber": "Chamber",
   "block.sculkcatalyticchamber.mechanical_shrieker": "Mechanical Shrieker",
 
+  "sculkcatalyticchamber.recipe.chamber": "Sculk Catalytic Chamber",
+
   "sculkcatalyticchamber.gui.goggles.chamber_contents": "Chamber Contents:"
 }

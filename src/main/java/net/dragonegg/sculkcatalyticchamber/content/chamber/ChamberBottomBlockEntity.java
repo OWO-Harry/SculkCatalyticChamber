@@ -417,8 +417,7 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
                 return false;
             if (!outputFluids.isEmpty() && externalTankNotPresent) {
                 // Special case - fluid outputs but output only accepts items
-                targetTank = outputTank.getCapability()
-                        .orElse(null);
+                targetTank = outputTank.getCapability().orElse(null);
                 if (targetTank == null)
                     return false;
                 if (!acceptFluidOutputsIntoChamber(outputFluids, simulate, targetTank))

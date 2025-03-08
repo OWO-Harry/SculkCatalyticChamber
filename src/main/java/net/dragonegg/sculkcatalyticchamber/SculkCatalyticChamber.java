@@ -36,6 +36,8 @@ public class SculkCatalyticChamber {
         RecipeRegistry.register(modEventBus);
         ParticleTypeRegistry.register(modEventBus);
 
+        SCCConfig.register();
+
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> onClientInit(modEventBus));
 
         // Register ourselves for server and other game events we are interested in

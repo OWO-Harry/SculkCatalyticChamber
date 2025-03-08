@@ -48,6 +48,11 @@ public class MechanicalShriekerBlock extends DirectionalKineticBlock implements 
     }
 
     @Override
+    public SpeedLevel getMinimumRequiredSpeedLevel() {
+        return SpeedLevel.MEDIUM;
+    }
+
+    @Override
     public PushReaction getPistonPushReaction(BlockState state) {
         return PushReaction.NORMAL;
     }

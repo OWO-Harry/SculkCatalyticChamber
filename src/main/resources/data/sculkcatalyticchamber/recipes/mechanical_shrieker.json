@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "W": {
+      "item": "create:whisk"
+    },
+    "Y": {
+      "item": "minecraft:sculk_shrieker"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "L": {
+      "item": "create:large_cogwheel"
+    }
+  },
+  "pattern": [
+    " S ",
+    "WYP",
+    " L "
+  ],
+  "result": {
+    "item": "sculkcatalyticchamber:mechanical_shrieker"
+  },
+  "show_notification": true
+}

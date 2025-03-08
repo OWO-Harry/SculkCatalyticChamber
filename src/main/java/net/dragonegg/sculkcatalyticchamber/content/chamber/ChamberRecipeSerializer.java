@@ -47,9 +47,9 @@ public class ChamberRecipeSerializer implements RecipeSerializer<ChamberRecipe> 
         if (chances > 0)
             json.addProperty("chances", chances);
 
-        int processingDuration = recipe.getProcessingDuration();
-        if (processingDuration > 0)
-            json.addProperty("processingTime", processingDuration);
+//        int processingDuration = recipe.getProcessingDuration();
+//        if (processingDuration > 0)
+//            json.addProperty("processingTime", processingDuration);
 
         HeatCondition requiredHeat = recipe.getRequiredHeat();
         if (requiredHeat != HeatCondition.NONE)
@@ -109,8 +109,8 @@ public class ChamberRecipeSerializer implements RecipeSerializer<ChamberRecipe> 
 
         if (GsonHelper.isValidNode(json, "chances"))
             builder.withChances(GsonHelper.getAsDouble(json, "chances"));
-        if (GsonHelper.isValidNode(json, "processingTime"))
-            builder.duration(GsonHelper.getAsInt(json, "processingTime"));
+//        if (GsonHelper.isValidNode(json, "processingTime"))
+//            builder.duration(GsonHelper.getAsInt(json, "processingTime"));
         if (GsonHelper.isValidNode(json, "heatRequirement"))
             builder.requiresHeat(HeatCondition.deserialize(GsonHelper.getAsString(json, "heatRequirement")));
 
@@ -150,7 +150,7 @@ public class ChamberRecipeSerializer implements RecipeSerializer<ChamberRecipe> 
         fluidOutputs.forEach(o -> o.writeToPacket(buffer));
 
         buffer.writeDouble(recipe.getChance());
-        buffer.writeVarInt(recipe.getProcessingDuration());
+//        buffer.writeVarInt(recipe.getProcessingDuration());
         buffer.writeVarInt(recipe.getRequiredHeat().ordinal());
     }
 
@@ -207,7 +207,7 @@ public class ChamberRecipeSerializer implements RecipeSerializer<ChamberRecipe> 
                 .withItemOutputs(results)
                 .withFluidOutputs(fluidResults)
                 .withChances(buffer.readDouble())
-                .duration(buffer.readVarInt())
+//                .duration(buffer.readVarInt())
                 .requiresHeat(HeatCondition.values()[buffer.readVarInt()])
                 .build();
 

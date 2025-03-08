@@ -27,7 +27,7 @@ public class MechanicalShriekerParticle extends TextureSheetParticle {
         super(pLevel, pX, pY, pZ, 0.0D, 0.0D, 0.0D);
         this.quadSize = 0.85F;
         this.delay = delay;
-        this.lifetime = 60;
+        this.lifetime = 90;
         this.gravity = 0.0F;
         this.hasPhysics = false;
         this.normal = direction.getNormal();
@@ -38,7 +38,7 @@ public class MechanicalShriekerParticle extends TextureSheetParticle {
 
     @Override
     public float getQuadSize(float pScaleFactor) {
-        return this.quadSize * Mth.clamp(((float)this.age + pScaleFactor) * 2 / (float)this.lifetime * 0.75F, 0.0F, 1.0F);
+        return this.quadSize * Mth.clamp(((float)this.age + pScaleFactor) * 2 / 45, 0.0F, 1.0F);
     }
 
     public void render(VertexConsumer pBuffer, Camera pRenderInfo, float pPartialTicks) {

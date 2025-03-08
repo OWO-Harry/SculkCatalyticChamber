@@ -8,7 +8,6 @@ import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTank
 import com.simibubi.create.foundation.fluid.FluidIngredient;
 import com.simibubi.create.foundation.item.SmartInventory;
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
-import com.simibubi.create.foundation.recipe.RecipeFinder;
 import com.simibubi.create.foundation.utility.Iterate;
 import net.dragonegg.sculkcatalyticchamber.registry.RecipeRegistry;
 import net.minecraft.core.NonNullList;
@@ -28,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -50,7 +49,7 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
     protected double chances;
     protected NonNullList<ProcessingOutput> results;
     protected NonNullList<FluidStack> fluidResults;
-    protected int processingDuration;
+//    protected int processingDuration;
     protected HeatCondition requiredHeat;
 
     private RecipeType<?> type;
@@ -69,7 +68,7 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         this.chances = params.chances;
         this.results = params.results;
         this.fluidResults = params.fluidResults;
-        this.processingDuration = params.processingDuration;
+//        this.processingDuration = params.processingDuration;
         this.requiredHeat = params.requiredHeat;
 
         this.type = typeInfo.getType();
@@ -82,12 +81,43 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         this(RecipeRegistry.CHAMBER, params);
     }
 
+    public NonNullList<Ingredient> getTopIngredients() {
+        return topIngredients;
+    }
+
+    public NonNullList<Ingredient> getCatalysts() {
+        return catalysts;
+    }
+
+    public NonNullList<Ingredient> getBottomIngredients() {
+        return bottomIngredients;
+    }
+
+    public NonNullList<FluidIngredient> getTopFluidIngredients() {
+        return topFluidIngredients;
+    }
+
+    public NonNullList<FluidIngredient> getFluidCatalysts() {
+        return fluidCatalysts;
+    }
+
+    public NonNullList<FluidIngredient> getBottomFluidIngredients() {
+        return bottomFluidIngredients;
+    }
+
     @Override
     public @NotNull NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> ingredients = NonNullList.create();
         ingredients.addAll(topIngredients);
         ingredients.addAll(bottomIngredients);
         return ingredients;
+    }
+
+    public NonNullList<FluidIngredient> getFluidIngredients() {
+        NonNullList<FluidIngredient> fluidIngredients = NonNullList.create();
+        fluidIngredients.addAll(topFluidIngredients);
+        fluidIngredients.addAll(bottomFluidIngredients);
+        return fluidIngredients;
     }
 
     public List<ProcessingOutput> getRollableResults() {
@@ -127,9 +157,9 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         return chances;
     }
 
-    public int getProcessingDuration() {
-        return processingDuration;
-    }
+//    public int getProcessingDuration() {
+//        return processingDuration;
+//    }
 
     public HeatCondition getRequiredHeat() {
         return requiredHeat;
@@ -264,7 +294,7 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
                         continue;
                     if (!simulate && catalystConsumed)
                         availableItemsMiddle.extractItem(slot, 1, false);
-                    extractedFluidsMiddle[slot]++;
+                    extractedItemsMiddle[slot]++;
                     continue Ingredients;
                 }
 
@@ -363,12 +393,12 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
                 for (FluidStack fluidStack : chamberRecipe.getFluidResults())
                     if (!fluidStack.isEmpty())
                         recipeOutputFluids.add(fluidStack);
-                for (ItemStack stack : chamberRecipe.getRemainingItems(topBE.getInputInventory()))
+                for (ItemStack stack : chamberRecipe.getRemainingItems(topBE.getInputInventory(), extractedItemsTop))
                     if (!stack.isEmpty()) recipeOutputItems.add(stack);
                 if (catalystConsumed)
-                    for (ItemStack stack : chamberRecipe.getRemainingItems(middleBE.getInputInventory()))
+                    for (ItemStack stack : chamberRecipe.getRemainingItems(middleBE.getInputInventory(), extractedItemsMiddle))
                         if (!stack.isEmpty()) recipeOutputItems.add(stack);
-                for (ItemStack stack : chamberRecipe.getRemainingItems(bottomBE.getInputInventory()))
+                for (ItemStack stack : chamberRecipe.getRemainingItems(bottomBE.getInputInventory(), extractedItemsBottom))
                     if (!stack.isEmpty()) recipeOutputItems.add(stack);
             }
 
@@ -397,6 +427,19 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
     @Override
     public ItemStack getResultItem(RegistryAccess pRegistryAccess) {
         return getRollableResults().isEmpty() ? ItemStack.EMPTY : getRollableResults().get(0).getStack();
+    }
+
+    public NonNullList<ItemStack> getRemainingItems(SmartInventory container, int[] extracted) {
+        NonNullList<ItemStack> nonnulllist = NonNullList.withSize(container.getContainerSize(), ItemStack.EMPTY);
+
+        for(int i = 0; i < nonnulllist.size(); ++i) {
+            ItemStack item = container.getItem(i);
+            if (item.hasCraftingRemainingItem()) {
+                nonnulllist.set(i, item.getCraftingRemainingItem().copyWithCount(extracted[i]));
+            }
+        }
+
+        return nonnulllist;
     }
 
     @Override

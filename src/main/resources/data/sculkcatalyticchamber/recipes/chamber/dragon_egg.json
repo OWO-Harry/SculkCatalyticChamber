@@ -1,6 +1,5 @@
 {
   "type": "sculkcatalyticchamber:chamber",
-  "heatRequirement": "heated",
   "topIngredients": [
     {
       "item": "minecraft:coal"
