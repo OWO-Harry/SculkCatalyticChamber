@@ -3,106 +3,26 @@
   "heatRequirement": "superheated",
   "topIngredients": [
     {
-      "tag": "forge:heads"
-    },
-    {
-      "item": "minecraft:ender_eye"
-    },
-    {
-      "item": "minecraft:ender_eye"
-    },
-    {
-      "item": "minecraft:dragon_breath"
-    },
-    {
-      "item": "minecraft:dragon_breath"
-    },
-    {
-      "item": "minecraft:dragon_breath"
-    },
-    {
-      "item": "minecraft:dragon_breath"
-    },
-    {
-      "item": "minecraft:diamond"
-    },
-    {
-      "amount": 1000,
-      "fluid": "create:honey",
-      "nbt": {}
-    },
-    {
-      "amount": 500,
-      "fluid": "minecraft:water",
-      "nbt": {}
+      "item": "minecraft:wither_skeleton_skull"
     }
   ],
   "bottomIngredients": [
     {
-      "item": "create:powdered_obsidian"
+      "item": "minecraft:sculk_shrieker"
     },
     {
-      "item": "create:powdered_obsidian"
-    },
-    {
-      "item": "minecraft:redstone"
-    },
-    {
-      "item": "minecraft:redstone"
-    },
-    {
-      "item": "create:cinder_flour"
-    },
-    {
-      "item": "create:cinder_flour"
-    },
-    {
-      "item": "minecraft:netherite_ingot"
-    },
-    {
-      "amount": 2000,
-      "fluid": "minecraft:lava",
-      "nbt": {}
+      "item": "minecraft:sculk_shrieker"
     }
   ],
   "catalysts": [
     {
-      "item": "minecraft:sculk"
-    },
-    {
-      "item": "minecraft:sculk"
-    },
-    {
-      "item": "minecraft:shulker_shell"
-    },
-    {
       "item": "minecraft:nether_star"
-    },
-    {
-      "item": "create:precision_mechanism"
-    },
-    {
-      "amount": 500,
-      "fluid": "create:chocolate",
-      "nbt": {}
     }
   ],
-  "chances": 0.8,
+  "chances": 0.05,
   "results": [
     {
       "item": "minecraft:dragon_head"
-    },
-    {
-      "item": "minecraft:end_crystal"
-    },
-    {
-      "item": "minecraft:popped_chorus_fruit",
-      "count": 2
-    },
-    {
-      "amount": 500,
-      "fluid": "minecraft:milk",
-      "nbt": {}
     }
   ]
 }

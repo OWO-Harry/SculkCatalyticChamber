@@ -10,6 +10,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
@@ -85,6 +87,8 @@ public class MechanicalShriekerBlockEntity extends ChamberOperatingBlockEntity i
                         recipeSpeed = t / 100f;
 
                     processingTicks = Mth.clamp((Mth.log2((int) (512 / speed))) * Mth.ceil(recipeSpeed * 15) + 1, 1, 512);
+                    level.playSound(null, worldPosition, SoundEvents.SCULK_CATALYST_BLOOM,
+                            SoundSource.BLOCKS, 2.0f, speed < 65 ? .75f : 1.5f);
                 } else {
                     processingTicks--;
                     if (processingTicks == 0) {

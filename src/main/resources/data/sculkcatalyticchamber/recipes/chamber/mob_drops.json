@@ -1,0 +1,49 @@
+{
+  "type": "sculkcatalyticchamber:chamber",
+  "heatRequirement": "superheated",
+  "topIngredients": [
+    {
+      "item": "minecraft:sculk"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "create:experience_nugget"
+    },
+    {
+      "item": "create:experience_nugget"
+    },
+    {
+      "item": "create:experience_nugget"
+    }
+  ],
+  "catalysts": [
+    {
+      "amount": 100,
+      "fluid": "create:honey",
+      "nbt": {}
+    }
+  ],
+  "chances": 0.5,
+  "results": [
+    {
+      "item": "minecraft:bone",
+      "chance": 0.1
+    },
+    {
+      "item": "minecraft:rotten_flesh",
+      "chance": 0.1
+    },
+    {
+      "item": "minecraft:string",
+      "chance": 0.1
+    },
+    {
+      "item": "minecraft:gunpowder",
+      "chance": 0.05
+    }
+  ]
+}

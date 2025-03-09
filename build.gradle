@@ -129,10 +129,12 @@ repositories {
     maven {
         url "https://cursemaven.com"
     }
+
     maven {
         name =  "Jared"
         url = "https://maven.blamejared.com/"
     }
+
     maven {
         name = "tterrag maven"
         url "https://maven.tterrag.com/"
@@ -155,6 +157,10 @@ dependencies {
     implementation fg.deobf("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
     implementation fg.deobf("com.jozufozu.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}")
     implementation fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
+
+    runtimeOnly fg.deobf("curse.maven:kubejs-238086:5853326")
+    runtimeOnly fg.deobf("curse.maven:architectury-api-419699:5137938")
+    runtimeOnly fg.deobf("curse.maven:rhino-416294:6186971")
 
 //    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
