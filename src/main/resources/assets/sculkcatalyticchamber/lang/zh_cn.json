@@ -1,5 +1,6 @@
 {
-  "itemGroup.sculkcatalyticchamber": "深邃回响",
+  "itemGroup.sculkcatalyticchamber": "机械动力：深邃回响",
+  "key.sculkcatalyticchamber.category": "机械动力：深邃回响",
 
   "block.sculkcatalyticchamber.chamber_top": "深渊催化釜",
   "block.sculkcatalyticchamber.chamber_middle": "深渊催化釜",

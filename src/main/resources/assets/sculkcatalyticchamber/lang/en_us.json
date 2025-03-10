@@ -1,5 +1,6 @@
 {
-  "itemGroup.sculkcatalyticchamber": "Sculk Catalytic Chamber",
+  "itemGroup.sculkcatalyticchamber": "Create: Abyss Catalysis",
+  "key.sculkcatalyticchamber.category": "Create: Abyss Catalysis",
 
   "block.sculkcatalyticchamber.chamber_top": "Chamber",
   "block.sculkcatalyticchamber.chamber_middle": "Catalyst Chamber",
