@@ -3,25 +3,23 @@
   "heatRequirement": "heated",
   "topIngredients": [
     {
-      "tag": "forge:ingots/zinc"
+      "item": "minecraft:sculk"
     }
   ],
   "bottomIngredients": [
     {
-      "item": "minecraft:sculk_vein"
+      "item": "minecraft:potato"
     }
   ],
   "catalysts": [
     {
-      "amount": 500,
-      "fluid": "minecraft:lava",
-      "nbt": {}
+      "tag": "c:nuggets/gold"
     }
   ],
-  "chances": 1.0,
+  "chances": 0.7,
   "results": [
     {
-      "item": "create:raw_zinc"
+      "item": "create:experience_nugget"
     }
   ]
 }

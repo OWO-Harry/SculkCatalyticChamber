@@ -3,23 +3,25 @@
   "heatRequirement": "heated",
   "topIngredients": [
     {
-      "item": "minecraft:sculk"
+      "tag": "c:ingots/copper"
     }
   ],
   "bottomIngredients": [
     {
-      "item": "minecraft:potato"
+      "item": "minecraft:sculk_vein"
     }
   ],
   "catalysts": [
     {
-      "tag": "forge:nuggets/gold"
+      "amount": 500,
+      "fluid": "minecraft:lava",
+      "nbt": {}
     }
   ],
-  "chances": 0.7,
+  "chances": 1.0,
   "results": [
     {
-      "item": "create:experience_nugget"
+      "item": "minecraft:raw_copper"
     }
   ]
 }

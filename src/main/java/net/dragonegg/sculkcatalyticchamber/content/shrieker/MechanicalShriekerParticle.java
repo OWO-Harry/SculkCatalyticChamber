@@ -8,8 +8,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -85,7 +85,10 @@ public class MechanicalShriekerParticle extends TextureSheetParticle {
     }
 
     private void makeCornerVertex(VertexConsumer pConsumer, Vector3f pVertex, float pU, float pV, int pPackedLight) {
-        pConsumer.vertex(pVertex.x(), pVertex.y(), pVertex.z()).uv(pU, pV).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(pPackedLight).endVertex();
+        pConsumer.addVertex(pVertex.x(), pVertex.y(), pVertex.z())
+                .setUv(pU, pV)
+                .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
+                .setLight(pPackedLight);
     }
 
     public int getLightColor(float pPartialTick) {

@@ -6,8 +6,8 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 import com.simibubi.create.foundation.blockEntity.behaviour.simple.DeferralBehaviour;
 import com.simibubi.create.foundation.recipe.RecipeFinder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -82,7 +82,7 @@ public abstract class ChamberOperatingBlockEntity extends KineticBlockEntity {
         return true;
     }
 
-    protected <C extends Container> boolean matchChamberRecipe(Recipe<C> recipe) {
+    protected boolean matchChamberRecipe(Recipe<?> recipe) {
         if (recipe == null)
             return false;
         Optional<ChamberBlockEntity> chamber = getChamber();
@@ -128,7 +128,10 @@ public abstract class ChamberOperatingBlockEntity extends KineticBlockEntity {
     }
 
     protected List<Recipe<?>> getAllRecipes() {
-        return RecipeFinder.get(getRecipeCacheKey(), level, this::matchStaticFilters);
+        return RecipeFinder.get(getRecipeCacheKey(), level, this::matchStaticFilters)
+                .stream()
+                .map(RecipeHolder::value)
+                .collect(Collectors.toList());
     }
 
     protected abstract void onChamberRemoved();
@@ -139,7 +142,11 @@ public abstract class ChamberOperatingBlockEntity extends KineticBlockEntity {
         return Optional.empty();
     }
 
-    protected abstract <C extends Container> boolean matchStaticFilters(Recipe<C> recipe);
+    protected boolean matchStaticFilters(RecipeHolder<? extends Recipe<?>> holder) {
+        return matchStaticFilters(holder.value());
+    }
+
+    protected abstract boolean matchStaticFilters(Recipe<?> recipe);
 
     protected abstract Object getRecipeCacheKey();
 

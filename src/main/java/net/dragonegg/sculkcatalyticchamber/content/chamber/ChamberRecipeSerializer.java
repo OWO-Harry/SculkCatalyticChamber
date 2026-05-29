@@ -1,217 +1,169 @@
 package net.dragonegg.sculkcatalyticchamber.content.chamber;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
 import com.simibubi.create.content.processing.recipe.ProcessingOutput;
-import com.simibubi.create.foundation.fluid.FluidHelper;
-import com.simibubi.create.foundation.fluid.FluidIngredient;
 import net.minecraft.core.NonNullList;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraftforge.fluids.FluidStack;
+import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.fluids.FluidStack;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChamberRecipeSerializer implements RecipeSerializer<ChamberRecipe> {
 
-    public ChamberRecipeSerializer() {
+    private static final Codec<Either<FluidIngredient, Ingredient>> MIXED_INGREDIENT_CODEC =
+            Codec.either(FluidIngredient.CODEC, Ingredient.CODEC);
+    private static final Codec<FluidStack> LEGACY_FLUID_STACK_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            BuiltInRegistries.FLUID.byNameCodec().fieldOf("fluid").forGetter(FluidStack::getFluid),
+            Codec.INT.optionalFieldOf("amount", 0).forGetter(FluidStack::getAmount)
+    ).apply(instance, FluidStack::new));
+    private static final Codec<ProcessingOutput> LEGACY_PROCESSING_OUTPUT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            BuiltInRegistries.ITEM.byNameCodec().fieldOf("item").forGetter(output -> output.getStack().getItem()),
+            ExtraCodecs.intRange(1, 99).optionalFieldOf("count", 1).forGetter(output -> output.getStack().getCount()),
+            ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("chance", 1F).forGetter(ProcessingOutput::getChance)
+    ).apply(instance, (Item item, Integer count, Float chance) -> new ProcessingOutput(item, count, chance)));
+    private static final Codec<Either<FluidStack, ProcessingOutput>> MIXED_RESULT_CODEC =
+            Codec.either(Codec.withAlternative(FluidStack.CODEC, LEGACY_FLUID_STACK_CODEC),
+                    Codec.withAlternative(ProcessingOutput.CODEC, LEGACY_PROCESSING_OUTPUT_CODEC));
+
+    private static final MapCodec<ChamberRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            MIXED_INGREDIENT_CODEC.listOf().optionalFieldOf("topIngredients", List.of()).forGetter(recipe -> mixedIngredients(recipe.topIngredients, recipe.topFluidIngredients)),
+            FluidIngredient.CODEC.listOf().optionalFieldOf("topFluidIngredients", List.of()).forGetter(recipe -> List.of()),
+            MIXED_INGREDIENT_CODEC.listOf().optionalFieldOf("bottomIngredients", List.of()).forGetter(recipe -> mixedIngredients(recipe.bottomIngredients, recipe.bottomFluidIngredients)),
+            FluidIngredient.CODEC.listOf().optionalFieldOf("bottomFluidIngredients", List.of()).forGetter(recipe -> List.of()),
+            MIXED_INGREDIENT_CODEC.listOf().optionalFieldOf("catalysts", List.of()).forGetter(recipe -> mixedIngredients(recipe.catalysts, recipe.fluidCatalysts)),
+            FluidIngredient.CODEC.listOf().optionalFieldOf("fluidCatalysts", List.of()).forGetter(recipe -> List.of()),
+            Codec.DOUBLE.optionalFieldOf("chances", 0.0).forGetter(ChamberRecipe::getChance),
+            MIXED_RESULT_CODEC.listOf().optionalFieldOf("results", List.of()).forGetter(recipe -> mixedResults(recipe.results, recipe.fluidResults)),
+            Codec.withAlternative(FluidStack.CODEC, LEGACY_FLUID_STACK_CODEC).listOf().optionalFieldOf("fluidResults", List.of()).forGetter(recipe -> List.of()),
+            HeatCondition.CODEC.optionalFieldOf("heatRequirement", HeatCondition.NONE).forGetter(ChamberRecipe::getRequiredHeat)
+    ).apply(instance, ChamberRecipeSerializer::fromCodec));
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, ChamberRecipe> STREAM_CODEC = StreamCodec.of(
+            ChamberRecipeSerializer::toNetwork,
+            ChamberRecipeSerializer::fromNetwork
+    );
+
+    private static ChamberRecipe fromCodec(List<Either<FluidIngredient, Ingredient>> topIngredients,
+                                           List<FluidIngredient> topFluidIngredients,
+                                           List<Either<FluidIngredient, Ingredient>> bottomIngredients,
+                                           List<FluidIngredient> bottomFluidIngredients,
+                                           List<Either<FluidIngredient, Ingredient>> catalysts,
+                                           List<FluidIngredient> fluidCatalysts,
+                                           double chances,
+                                           List<Either<FluidStack, ProcessingOutput>> results,
+                                           List<FluidStack> fluidResults,
+                                           HeatCondition requiredHeat) {
+        ChamberRecipeBuilder.ChamberRecipeParams params = new ChamberRecipeBuilder.ChamberRecipeParams(null);
+        splitIngredients(topIngredients, params.topIngredients, params.topFluidIngredients);
+        params.topFluidIngredients.addAll(topFluidIngredients);
+        splitIngredients(bottomIngredients, params.bottomIngredients, params.bottomFluidIngredients);
+        params.bottomFluidIngredients.addAll(bottomFluidIngredients);
+        splitIngredients(catalysts, params.catalysts, params.fluidCatalysts);
+        params.fluidCatalysts.addAll(fluidCatalysts);
+        params.chances = chances;
+        splitResults(results, params.results, params.fluidResults);
+        params.fluidResults.addAll(fluidResults);
+        params.requiredHeat = requiredHeat;
+        return new ChamberRecipe(params);
     }
 
-    public final void write(JsonObject json, ChamberRecipe recipe) {
-        JsonArray jsonTopIngredients = new JsonArray();
-        JsonArray jsonBottomIngredients = new JsonArray();
-        JsonArray jsonCatalysts = new JsonArray();
-        JsonArray jsonOutputs = new JsonArray();
+    private static ChamberRecipe fromNetwork(RegistryFriendlyByteBuf buffer) {
+        ChamberRecipeBuilder.ChamberRecipeParams params = new ChamberRecipeBuilder.ChamberRecipeParams(null);
+        params.topIngredients = toNonNullList(readList(buffer, Ingredient.CONTENTS_STREAM_CODEC));
+        params.topFluidIngredients = toNonNullList(readFluidIngredientList(buffer));
+        params.bottomIngredients = toNonNullList(readList(buffer, Ingredient.CONTENTS_STREAM_CODEC));
+        params.bottomFluidIngredients = toNonNullList(readFluidIngredientList(buffer));
+        params.catalysts = toNonNullList(readList(buffer, Ingredient.CONTENTS_STREAM_CODEC));
+        params.fluidCatalysts = toNonNullList(readFluidIngredientList(buffer));
+        params.chances = buffer.readDouble();
+        params.results = toNonNullList(readList(buffer, ProcessingOutput.STREAM_CODEC));
+        params.fluidResults = toNonNullList(readList(buffer, FluidStack.STREAM_CODEC));
+        params.requiredHeat = HeatCondition.STREAM_CODEC.decode(buffer);
+        return new ChamberRecipe(params);
+    }
 
-        recipe.topIngredients.forEach(i -> jsonTopIngredients.add(i.toJson()));
-        recipe.topFluidIngredients.forEach(i -> jsonTopIngredients.add(i.serialize()));
+    private static void toNetwork(RegistryFriendlyByteBuf buffer, ChamberRecipe recipe) {
+        writeList(buffer, recipe.topIngredients, Ingredient.CONTENTS_STREAM_CODEC);
+        writeFluidIngredientList(buffer, recipe.topFluidIngredients);
+        writeList(buffer, recipe.bottomIngredients, Ingredient.CONTENTS_STREAM_CODEC);
+        writeFluidIngredientList(buffer, recipe.bottomFluidIngredients);
+        writeList(buffer, recipe.catalysts, Ingredient.CONTENTS_STREAM_CODEC);
+        writeFluidIngredientList(buffer, recipe.fluidCatalysts);
+        buffer.writeDouble(recipe.chances);
+        writeList(buffer, recipe.results, ProcessingOutput.STREAM_CODEC);
+        writeList(buffer, recipe.fluidResults, FluidStack.STREAM_CODEC);
+        HeatCondition.STREAM_CODEC.encode(buffer, recipe.requiredHeat);
+    }
 
-        recipe.bottomIngredients.forEach(i -> jsonBottomIngredients.add(i.toJson()));
-        recipe.bottomFluidIngredients.forEach(i -> jsonBottomIngredients.add(i.serialize()));
+    private static <T> NonNullList<T> toNonNullList(List<T> list) {
+        NonNullList<T> result = NonNullList.create();
+        result.addAll(list);
+        return result;
+    }
 
-        recipe.catalysts.forEach(i -> jsonCatalysts.add(i.toJson()));
-        recipe.fluidCatalysts.forEach(i -> jsonCatalysts.add(i.serialize()));
+    private static List<Either<FluidIngredient, Ingredient>> mixedIngredients(List<Ingredient> itemIngredients,
+                                                                              List<FluidIngredient> fluidIngredients) {
+        List<Either<FluidIngredient, Ingredient>> mixed = new ArrayList<>();
+        itemIngredients.forEach(ingredient -> mixed.add(Either.right(ingredient)));
+        fluidIngredients.forEach(ingredient -> mixed.add(Either.left(ingredient)));
+        return mixed;
+    }
 
-        recipe.results.forEach(o -> jsonOutputs.add(o.serialize()));
-        recipe.fluidResults.forEach(o -> jsonOutputs.add(FluidHelper.serializeFluidStack(o)));
+    private static void splitIngredients(List<Either<FluidIngredient, Ingredient>> mixed,
+                                         NonNullList<Ingredient> itemIngredients,
+                                         NonNullList<FluidIngredient> fluidIngredients) {
+        mixed.forEach(ingredient -> ingredient.ifLeft(fluidIngredients::add).ifRight(itemIngredients::add));
+    }
 
-        json.add("topIngredients", jsonTopIngredients);
-        json.add("bottomIngredients", jsonBottomIngredients);
-        json.add("catalysts", jsonCatalysts);
-        json.add("results", jsonOutputs);
+    private static List<Either<FluidStack, ProcessingOutput>> mixedResults(List<ProcessingOutput> itemResults,
+                                                                           List<FluidStack> fluidResults) {
+        List<Either<FluidStack, ProcessingOutput>> mixed = new ArrayList<>();
+        itemResults.forEach(result -> mixed.add(Either.right(result)));
+        fluidResults.forEach(result -> mixed.add(Either.left(result)));
+        return mixed;
+    }
 
-        double chances = recipe.getChance();
-        if (chances > 0)
-            json.addProperty("chances", chances);
+    private static void splitResults(List<Either<FluidStack, ProcessingOutput>> mixed,
+                                     NonNullList<ProcessingOutput> itemResults,
+                                     NonNullList<FluidStack> fluidResults) {
+        mixed.forEach(result -> result.ifLeft(fluidResults::add).ifRight(itemResults::add));
+    }
 
-//        int processingDuration = recipe.getProcessingDuration();
-//        if (processingDuration > 0)
-//            json.addProperty("processingTime", processingDuration);
+    private static <T> List<T> readList(RegistryFriendlyByteBuf buffer, StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
+        return buffer.readList(buf -> codec.decode((RegistryFriendlyByteBuf) buf));
+    }
 
-        HeatCondition requiredHeat = recipe.getRequiredHeat();
-        if (requiredHeat != HeatCondition.NONE)
-            json.addProperty("heatRequirement", requiredHeat.serialize());
+    private static <T> void writeList(RegistryFriendlyByteBuf buffer, List<T> list, StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
+        buffer.writeCollection(list, (buf, value) -> codec.encode((RegistryFriendlyByteBuf) buf, value));
+    }
 
+    private static List<FluidIngredient> readFluidIngredientList(RegistryFriendlyByteBuf buffer) {
+        return buffer.readList(FluidIngredient::read);
+    }
+
+    private static void writeFluidIngredientList(RegistryFriendlyByteBuf buffer, List<FluidIngredient> list) {
+        buffer.writeCollection(list, (buf, value) -> value.write(buf));
     }
 
     @Override
-    public final ChamberRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
-        ChamberRecipeBuilder builder = new ChamberRecipeBuilder(recipeId);
-        NonNullList<Ingredient> topIngredients = NonNullList.create();
-        NonNullList<FluidIngredient> topFluidIngredients = NonNullList.create();
-        NonNullList<Ingredient> bottomIngredients = NonNullList.create();
-        NonNullList<FluidIngredient> bottomFluidIngredients = NonNullList.create();
-        NonNullList<Ingredient> catalysts = NonNullList.create();
-        NonNullList<FluidIngredient> fluidCatalysts = NonNullList.create();
-        NonNullList<ProcessingOutput> results = NonNullList.create();
-        NonNullList<FluidStack> fluidResults = NonNullList.create();
-
-        for (JsonElement je : GsonHelper.getAsJsonArray(json, "topIngredients")) {
-            if (FluidIngredient.isFluidIngredient(je))
-                topFluidIngredients.add(FluidIngredient.deserialize(je));
-            else
-                topIngredients.add(Ingredient.fromJson(je));
-        }
-
-        for (JsonElement je : GsonHelper.getAsJsonArray(json, "bottomIngredients")) {
-            if (FluidIngredient.isFluidIngredient(je))
-                bottomFluidIngredients.add(FluidIngredient.deserialize(je));
-            else
-                bottomIngredients.add(Ingredient.fromJson(je));
-        }
-
-        for (JsonElement je : GsonHelper.getAsJsonArray(json, "catalysts")) {
-            if (FluidIngredient.isFluidIngredient(je))
-                fluidCatalysts.add(FluidIngredient.deserialize(je));
-            else
-                catalysts.add(Ingredient.fromJson(je));
-        }
-
-        for (JsonElement je : GsonHelper.getAsJsonArray(json, "results")) {
-            JsonObject jsonObject = je.getAsJsonObject();
-            if (GsonHelper.isValidNode(jsonObject, "fluid"))
-                fluidResults.add(FluidHelper.deserializeFluidStack(jsonObject));
-            else
-                results.add(ProcessingOutput.deserialize(je));
-        }
-
-        builder.withItemTopIngredients(topIngredients)
-                .withFluidTopIngredients(topFluidIngredients)
-                .withItemBottomIngredients(bottomIngredients)
-                .withFluidBottomIngredients(bottomFluidIngredients)
-                .withItemCatalysts(catalysts)
-                .withFluidCatalysts(fluidCatalysts)
-                .withItemOutputs(results)
-                .withFluidOutputs(fluidResults);
-
-        if (GsonHelper.isValidNode(json, "chances"))
-            builder.withChances(GsonHelper.getAsDouble(json, "chances"));
-//        if (GsonHelper.isValidNode(json, "processingTime"))
-//            builder.duration(GsonHelper.getAsInt(json, "processingTime"));
-        if (GsonHelper.isValidNode(json, "heatRequirement"))
-            builder.requiresHeat(HeatCondition.deserialize(GsonHelper.getAsString(json, "heatRequirement")));
-
-        ChamberRecipe recipe = builder.build();
-        return recipe;
+    public MapCodec<ChamberRecipe> codec() {
+        return CODEC;
     }
 
     @Override
-    public final void toNetwork(FriendlyByteBuf buffer, ChamberRecipe recipe) {
-        NonNullList<Ingredient> topIngredients = recipe.topIngredients;
-        NonNullList<FluidIngredient> topFluidIngredients = recipe.topFluidIngredients;
-        NonNullList<Ingredient> botttomIngredients = recipe.bottomIngredients;
-        NonNullList<FluidIngredient> bottomFluidIngredients = recipe.bottomFluidIngredients;
-        NonNullList<Ingredient> catalysts = recipe.catalysts;
-        NonNullList<FluidIngredient> fluidCatalysts = recipe.fluidCatalysts;
-        NonNullList<ProcessingOutput> outputs = recipe.results;
-        NonNullList<FluidStack> fluidOutputs = recipe.fluidResults;
-
-        buffer.writeVarInt(topIngredients.size());
-        topIngredients.forEach(i -> i.toNetwork(buffer));
-        buffer.writeVarInt(topFluidIngredients.size());
-        topFluidIngredients.forEach(i -> i.write(buffer));
-
-        buffer.writeVarInt(botttomIngredients.size());
-        botttomIngredients.forEach(i -> i.toNetwork(buffer));
-        buffer.writeVarInt(bottomFluidIngredients.size());
-        bottomFluidIngredients.forEach(i -> i.write(buffer));
-
-        buffer.writeVarInt(catalysts.size());
-        catalysts.forEach(i -> i.toNetwork(buffer));
-        buffer.writeVarInt(fluidCatalysts.size());
-        fluidCatalysts.forEach(i -> i.write(buffer));
-
-        buffer.writeVarInt(outputs.size());
-        outputs.forEach(o -> o.write(buffer));
-        buffer.writeVarInt(fluidOutputs.size());
-        fluidOutputs.forEach(o -> o.writeToPacket(buffer));
-
-        buffer.writeDouble(recipe.getChance());
-//        buffer.writeVarInt(recipe.getProcessingDuration());
-        buffer.writeVarInt(recipe.getRequiredHeat().ordinal());
+    public StreamCodec<RegistryFriendlyByteBuf, ChamberRecipe> streamCodec() {
+        return STREAM_CODEC;
     }
-
-    @Override
-    public final ChamberRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buffer) {
-        NonNullList<Ingredient> topIngredients = NonNullList.create();
-        NonNullList<FluidIngredient> topFluidIngredients = NonNullList.create();
-        NonNullList<Ingredient> bottomIngredients = NonNullList.create();
-        NonNullList<FluidIngredient> bottomFluidIngredients = NonNullList.create();
-        NonNullList<Ingredient> catalysts = NonNullList.create();
-        NonNullList<FluidIngredient> fluidCatalysts = NonNullList.create();
-        NonNullList<ProcessingOutput> results = NonNullList.create();
-        NonNullList<FluidStack> fluidResults = NonNullList.create();
-
-        int size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            topIngredients.add(Ingredient.fromNetwork(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            topFluidIngredients.add(FluidIngredient.read(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            bottomIngredients.add(Ingredient.fromNetwork(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            bottomFluidIngredients.add(FluidIngredient.read(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            catalysts.add(Ingredient.fromNetwork(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            fluidCatalysts.add(FluidIngredient.read(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            results.add(ProcessingOutput.read(buffer));
-
-        size = buffer.readVarInt();
-        for (int i = 0; i < size; i++)
-            fluidResults.add(FluidStack.readFromPacket(buffer));
-
-        ChamberRecipe recipe = new ChamberRecipeBuilder(recipeId)
-                .withItemTopIngredients(topIngredients)
-                .withFluidTopIngredients(topFluidIngredients)
-                .withItemBottomIngredients(bottomIngredients)
-                .withFluidBottomIngredients(bottomFluidIngredients)
-                .withItemCatalysts(catalysts)
-                .withFluidCatalysts(fluidCatalysts)
-                .withItemOutputs(results)
-                .withFluidOutputs(fluidResults)
-                .withChances(buffer.readDouble())
-//                .duration(buffer.readVarInt())
-                .requiresHeat(HeatCondition.values()[buffer.readVarInt()])
-                .build();
-
-        return recipe;
-    }
-
 }

@@ -1,12 +1,12 @@
 {
   "type": "create:mechanical_crafting",
-  "acceptMirrored": false,
+  "accept_mirrored": false,
   "key": {
     "A": {
       "item": "minecraft:sculk"
     },
     "P": {
-      "tag": "forge:plates/iron"
+      "tag": "c:plates/iron"
     },
     "T": {
       "item": "create:fluid_tank"
@@ -24,7 +24,7 @@
       "item": "create:hose_pulley"
     },
     "I": {
-      "tag": "forge:storage_blocks/iron"
+      "tag": "c:storage_blocks/iron"
     }
   },
   "pattern": [
@@ -35,6 +35,6 @@
     "APA"
   ],
   "result": {
-    "item": "sculkcatalyticchamber:chamber"
+    "id": "sculkcatalyticchamber:chamber"
   }
 }

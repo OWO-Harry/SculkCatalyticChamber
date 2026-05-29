@@ -3,13 +3,13 @@
   "heatRequirement": "heated",
   "topIngredients": [
     {
-      "tag": "forge:nuggets/iron"
+      "tag": "c:nuggets/iron"
     },
     {
-      "tag": "forge:nuggets/iron"
+      "tag": "c:nuggets/iron"
     },
     {
-      "tag": "forge:nuggets/iron"
+      "tag": "c:nuggets/iron"
     }
   ],
   "bottomIngredients": [

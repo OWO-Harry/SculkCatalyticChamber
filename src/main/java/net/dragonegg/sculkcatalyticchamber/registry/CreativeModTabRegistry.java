@@ -1,26 +1,24 @@
 package net.dragonegg.sculkcatalyticchamber.registry;
 
 import com.simibubi.create.AllCreativeModeTabs;
-import com.simibubi.create.foundation.utility.Components;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import static net.dragonegg.sculkcatalyticchamber.SculkCatalyticChamber.MODID;
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 public class CreativeModTabRegistry {
 
     private static final DeferredRegister<CreativeModeTab> REGISTER =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    public static final RegistryObject<CreativeModeTab> TAB = REGISTER.register("base",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = REGISTER.register("base",
             () -> CreativeModeTab.builder()
-                    .title(Components.translatable("itemGroup." + MODID))
+                    .title(Component.translatable("itemGroup." + MODID))
                     .withTabsBefore(AllCreativeModeTabs.PALETTES_CREATIVE_TAB.getKey())
                     .icon(Items.ECHO_SHARD::getDefaultInstance)
                     .displayItems((para, out) -> {

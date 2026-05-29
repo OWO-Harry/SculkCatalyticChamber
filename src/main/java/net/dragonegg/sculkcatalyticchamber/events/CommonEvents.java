@@ -4,14 +4,14 @@ import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.EventBusSubscriber.Bus;
 
 import static net.dragonegg.sculkcatalyticchamber.SculkCatalyticChamber.MODID;
 
-@EventBusSubscriber(modid = MODID, bus = Bus.FORGE)
+@EventBusSubscriber(modid = MODID)
 public class CommonEvents {
 
     @SubscribeEvent

@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
@@ -34,17 +35,34 @@ public abstract class ChamberBlock<T extends ChamberBlockEntity> extends Block i
     }
 
     @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player, BlockHitResult hit) {
+        return this.onBlockEntityUse(worldIn, pos, be -> be.use(worldIn, pos, player, InteractionHand.MAIN_HAND));
+    }
+
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level worldIn, BlockPos pos,
+                                              Player player, InteractionHand handIn, BlockHitResult hit) {
+        InteractionResult result = this.onBlockEntityUse(worldIn, pos, be -> be.use(worldIn, pos, player, handIn));
+        return switch (result) {
+            case SUCCESS, SUCCESS_NO_ITEM_USED -> ItemInteractionResult.sidedSuccess(worldIn.isClientSide);
+            case CONSUME -> ItemInteractionResult.CONSUME;
+            case CONSUME_PARTIAL -> ItemInteractionResult.CONSUME_PARTIAL;
+            case FAIL -> ItemInteractionResult.FAIL;
+            case PASS -> ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        };
+    }
+
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         return this.onBlockEntityUse(worldIn, pos, be -> be.use(worldIn, pos, player, handIn));
     }
 
     @Override
-    public boolean isPathfindable(BlockState pState, BlockGetter pLevel, BlockPos pPos, PathComputationType pType) {
+    protected boolean isPathfindable(BlockState pState, PathComputationType pType) {
         return false;
     }
 
     @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         return ordinal() == 0 || level.getBlockState(pos.below(ordinal())).getBlock() instanceof ChamberBottomBlock;
     }
 
@@ -116,7 +134,7 @@ public abstract class ChamberBlock<T extends ChamberBlockEntity> extends Block i
             world.destroyBlock(posI, false);
         }
 
-        playRemoveSound(world, pos);
+        IWrenchable.playRemoveSound(world, pos);
         return InteractionResult.SUCCESS;
     }
 
@@ -125,7 +143,7 @@ public abstract class ChamberBlock<T extends ChamberBlockEntity> extends Block i
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         return BlockRegistry.CHAMBER_BOTTOM_BLOCK.asStack();
     }
 

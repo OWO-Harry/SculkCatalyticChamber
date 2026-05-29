@@ -1,8 +1,8 @@
 package net.dragonegg.sculkcatalyticchamber.content.shrieker;
 
 import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
-import com.simibubi.create.foundation.render.CachedBufferer;
-import com.simibubi.create.foundation.render.SuperByteBuffer;
+import net.createmod.catnip.render.CachedBuffers;
+import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -17,7 +17,7 @@ public class MechanicalShriekerRender extends KineticBlockEntityRenderer<Mechani
 
     @Override
     protected SuperByteBuffer getRotatedModel(MechanicalShriekerBlockEntity be, BlockState state) {
-        return CachedBufferer.partialFacingVertical(MECHANICAL_SHRIEKER_COG, state, state.getValue(FACING));
+        return CachedBuffers.partialFacingVertical(MECHANICAL_SHRIEKER_COG, state, state.getValue(FACING));
     }
 
 }

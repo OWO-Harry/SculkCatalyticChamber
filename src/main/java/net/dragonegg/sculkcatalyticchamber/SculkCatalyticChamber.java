@@ -5,12 +5,10 @@ import net.dragonegg.sculkcatalyticchamber.registry.*;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(SculkCatalyticChamber.MODID)
@@ -21,13 +19,12 @@ public class SculkCatalyticChamber {
     public static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MODID)
             .defaultCreativeTab((ResourceKey<CreativeModeTab>) null);
 
-    public SculkCatalyticChamber() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-
+    public SculkCatalyticChamber(IEventBus modEventBus) {
         REGISTRATE.registerEventListeners(modEventBus);
 
         CreativeModTabRegistry.register(modEventBus);
         BlockRegistry.register();
+        BlockRegistry.registerCapabilities(modEventBus);
         RecipeRegistry.register(modEventBus);
         ParticleTypeRegistry.register(modEventBus);
 
@@ -35,10 +32,8 @@ public class SculkCatalyticChamber {
 
         SCCConfig.register();
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> onClientInit(modEventBus));
-
-        // Register ourselves for server and other game events we are interested in
-        MinecraftForge.EVENT_BUS.register(this);
+        if (FMLEnvironment.dist == Dist.CLIENT)
+            onClientInit(modEventBus);
     }
 
     public static void onClientInit(IEventBus modEventBus) {
@@ -49,6 +44,6 @@ public class SculkCatalyticChamber {
     }
 
     public static ResourceLocation asResource(String path) {
-        return new ResourceLocation(MODID, path);
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
     }
 }
