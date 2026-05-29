@@ -1,7 +1,7 @@
 package net.dragonegg.sculkcatalyticchamber.content.chamber;
 
 import com.simibubi.create.Create;
-import com.simibubi.create.content.equipment.goggles.IHaveGoggleInformation;
+import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.content.equipment.wrench.WrenchItem;
 import com.simibubi.create.content.fluids.transfer.GenericItemEmptying;
 import com.simibubi.create.content.fluids.transfer.GenericItemFilling;
@@ -12,8 +12,9 @@ import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTank
 import com.simibubi.create.foundation.fluid.FluidHelper;
 import com.simibubi.create.foundation.item.ItemHelper;
 import com.simibubi.create.foundation.item.SmartInventory;
-import com.simibubi.create.foundation.utility.*;
+import net.createmod.catnip.lang.Lang;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -30,16 +31,12 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.items.ItemStackHandler;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 
 import static net.dragonegg.sculkcatalyticchamber.SculkCatalyticChamber.MODID;
@@ -49,9 +46,6 @@ public abstract class ChamberBlockEntity extends SmartBlockEntity implements IHa
     public ChamberInventory inputInventory;
     public SmartFluidTankBehaviour inputTank;
     protected boolean contentsChanged;
-
-    protected LazyOptional<IItemHandlerModifiable> itemCapability;
-    protected LazyOptional<IFluidHandler> fluidCapability;
 
     int recipeBackupCheck;
 
@@ -70,21 +64,16 @@ public abstract class ChamberBlockEntity extends SmartBlockEntity implements IHa
         behaviours.add(inputTank);
     }
 
-    protected void setCapabilities() {
-        itemCapability = LazyOptional.of(this::getInvs);
-        fluidCapability = LazyOptional.of(this::getTanks);
+    @Override
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(compound, registries, clientPacket);
+        inputInventory.deserializeNBT(registries, compound.getCompound("InputItems"));
     }
 
     @Override
-    protected void read(CompoundTag compound, boolean clientPacket) {
-        super.read(compound, clientPacket);
-        inputInventory.deserializeNBT(compound.getCompound("InputItems"));
-    }
-
-    @Override
-    public void write(CompoundTag compound, boolean clientPacket) {
-        super.write(compound, clientPacket);
-        compound.put("InputItems", inputInventory.serializeNBT());
+    public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
+        compound.put("InputItems", inputInventory.serializeNBT(registries));
     }
 
     @Override
@@ -101,23 +90,6 @@ public abstract class ChamberBlockEntity extends SmartBlockEntity implements IHa
     public void destroy() {
         super.destroy();
         ItemHelper.dropContents(level, worldPosition, inputInventory);
-    }
-
-    @Override
-    public void invalidate() {
-        super.invalidate();
-        itemCapability.invalidate();
-        fluidCapability.invalidate();
-    }
-
-    @Nonnull
-    @Override
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, Direction side) {
-        if (cap == ForgeCapabilities.ITEM_HANDLER)
-            return itemCapability.cast();
-        if (cap == ForgeCapabilities.FLUID_HANDLER)
-            return fluidCapability.cast();
-        return super.getCapability(cap, side);
     }
 
     @Override
@@ -176,7 +148,7 @@ public abstract class ChamberBlockEntity extends SmartBlockEntity implements IHa
     }
 
     public IFluidHandler getTanks() {
-        return inputTank.getCapability().orElse(null);
+        return inputTank.getCapability();
     }
 
     public abstract ChamberTopBlockEntity getTop();
@@ -246,33 +218,33 @@ public abstract class ChamberBlockEntity extends SmartBlockEntity implements IHa
         Lang.builder(MODID).translate("gui.goggles.chamber_contents")
                 .forGoggles(tooltip);
 
-        IItemHandlerModifiable items = itemCapability.orElse(new ItemStackHandler());
-        IFluidHandler fluids = fluidCapability.orElse(new FluidTank(0));
+        IItemHandlerModifiable items = Optional.ofNullable(getInvs()).orElse(new ItemStackHandler());
+        IFluidHandler fluids = Optional.ofNullable(getTanks()).orElse(new FluidTank(0));
         boolean isEmpty = true;
 
         for (int i = 0; i < items.getSlots(); i++) {
             ItemStack stackInSlot = items.getStackInSlot(i);
             if (stackInSlot.isEmpty())
                 continue;
-            Lang.text("")
-                    .add(Components.translatable(stackInSlot.getDescriptionId())
+            Lang.builder(MODID).text("")
+                    .add(Component.translatable(stackInSlot.getDescriptionId())
                             .withStyle(ChatFormatting.GRAY))
-                    .add(Lang.text(" x" + stackInSlot.getCount())
+                    .add(Lang.builder(MODID).text(" x" + stackInSlot.getCount())
                             .style(ChatFormatting.GREEN))
                     .forGoggles(tooltip, 1);
             isEmpty = false;
         }
 
-        LangBuilder mb = Lang.translate("generic.unit.millibuckets");
+        var mb = Lang.builder(MODID).translate("generic.unit.millibuckets");
         for (int i = 0; i < fluids.getTanks(); i++) {
             FluidStack fluidStack = fluids.getFluidInTank(i);
             if (fluidStack.isEmpty())
                 continue;
-            Lang.text("")
-                    .add(Lang.fluidName(fluidStack)
-                            .add(Lang.text(" "))
+            Lang.builder(MODID).text("")
+                    .add(Lang.builder(MODID).add(fluidStack.getHoverName())
+                            .add(Lang.builder(MODID).text(" "))
                             .style(ChatFormatting.GRAY)
-                            .add(Lang.number(fluidStack.getAmount())
+                            .add(Lang.builder(MODID).text(String.valueOf(fluidStack.getAmount()))
                                     .add(mb)
                                     .style(ChatFormatting.BLUE)))
                     .forGoggles(tooltip, 1);

@@ -2,7 +2,6 @@ package net.dragonegg.sculkcatalyticchamber.content.chamber;
 
 import com.simibubi.create.foundation.item.SmartInventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.ItemHandlerHelper;
 
 public class ChamberInventory extends SmartInventory {
 
@@ -19,7 +18,7 @@ public class ChamberInventory extends SmartInventory {
 
         for (int i = 0; i < getSlots(); i++) {
             // Only insert if no other slot already has a stack of this item
-            if (i != slot && ItemHandlerHelper.canItemStacksStack(stack, inv.getStackInSlot(i)))
+            if (i != slot && ItemStack.isSameItemSameComponents(stack, inv.getStackInSlot(i)))
                 return stack;
             if (inv.getStackInSlot(i).isEmpty() && firstFreeSlot == -1)
                 firstFreeSlot = i;

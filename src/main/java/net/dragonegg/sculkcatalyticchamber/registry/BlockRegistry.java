@@ -1,6 +1,7 @@
 package net.dragonegg.sculkcatalyticchamber.registry;
 
-import com.simibubi.create.content.kinetics.BlockStressDefaults;
+import com.simibubi.create.api.stress.BlockStressValues;
+import com.simibubi.create.content.kinetics.base.SingleAxisRotatingVisual;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.simibubi.create.foundation.data.TagGen;
 import com.tterrag.registrate.util.entry.BlockEntityEntry;
@@ -8,6 +9,9 @@ import com.tterrag.registrate.util.entry.BlockEntry;
 import net.dragonegg.sculkcatalyticchamber.content.shrieker.*;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.*;
 
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.material.MapColor;
@@ -74,14 +78,14 @@ public class BlockRegistry {
             .block("mechanical_shrieker", MechanicalShriekerBlock::new)
             .initialProperties(() -> Blocks.SCULK_SHRIEKER)
             .transform(TagGen.axeOrPickaxe())
-            .transform(BlockStressDefaults.setImpact(40.0))
+            .onRegister(block -> BlockStressValues.IMPACTS.register(block, () -> 40.0))
             .item()
             .transform(customItemModel())
             .register();
 
     public static final BlockEntityEntry<MechanicalShriekerBlockEntity> MECHANICAL_SHRIEKER_BLOCK_TILE = REGISTRATE
             .blockEntity("mechanical_shrieker", MechanicalShriekerBlockEntity::new)
-            .instance(() -> MechanicalShriekerCogInstance::new)
+            .visual(() -> SingleAxisRotatingVisual.of(PartialModelRegistry.MECHANICAL_SHRIEKER_COG), false)
             .validBlocks(MECHANICAL_SHRIEKER_BLOCK)
             .renderer(() -> MechanicalShriekerRender::new)
             .register();
@@ -90,5 +94,35 @@ public class BlockRegistry {
 
     public static void register() {}
 
+    public static void registerCapabilities(IEventBus modEventBus) {
+        modEventBus.addListener(BlockRegistry::onRegisterCapabilities);
+    }
+
+    private static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                CHAMBER_TOP_BLOCK_TILE.get(),
+                (be, side) -> be.getInvs());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                CHAMBER_TOP_BLOCK_TILE.get(),
+                (be, side) -> be.getTanks());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                CHAMBER_MIDDLE_BLOCK_TILE.get(),
+                (be, side) -> be.getInvs());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                CHAMBER_MIDDLE_BLOCK_TILE.get(),
+                (be, side) -> be.getTanks());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                CHAMBER_BOTTOM_BLOCK_TILE.get(),
+                (be, side) -> be.getInvs());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                CHAMBER_BOTTOM_BLOCK_TILE.get(),
+                (be, side) -> be.getTanks());
+    }
 
 }

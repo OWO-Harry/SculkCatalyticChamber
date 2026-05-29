@@ -3,7 +3,7 @@
   "heatRequirement": "heated",
   "topIngredients": [
     {
-      "tag": "forge:ingots/copper"
+      "tag": "c:ingots/zinc"
     }
   ],
   "bottomIngredients": [
@@ -21,7 +21,7 @@
   "chances": 1.0,
   "results": [
     {
-      "item": "minecraft:raw_copper"
+      "item": "create:raw_zinc"
     }
   ]
 }

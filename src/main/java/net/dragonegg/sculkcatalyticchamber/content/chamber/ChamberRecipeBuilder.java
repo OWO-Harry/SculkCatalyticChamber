@@ -1,18 +1,13 @@
 package net.dragonegg.sculkcatalyticchamber.content.chamber;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
 import com.simibubi.create.content.processing.recipe.ProcessingOutput;
-import com.simibubi.create.foundation.data.SimpleDatagenIngredient;
 import com.simibubi.create.foundation.data.recipe.Mods;
 import com.simibubi.create.foundation.fluid.FluidHelper;
-import com.simibubi.create.foundation.fluid.FluidIngredient;
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
-import com.simibubi.create.foundation.utility.Pair;
-import com.tterrag.registrate.util.DataIngredient;
 import net.minecraft.core.NonNullList;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -21,15 +16,14 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.common.crafting.conditions.NotCondition;
-import net.minecraftforge.fluids.FluidStack;
+import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.common.conditions.ICondition;
+import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.common.conditions.NotCondition;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ChamberRecipeBuilder {
     
@@ -148,8 +142,8 @@ public class ChamberRecipeBuilder {
         return new ChamberRecipe(params);
     }
 
-    public void build(Consumer<FinishedRecipe> consumer) {
-        consumer.accept(new DataGenResult(build(), recipeConditions));
+    public void build(RecipeOutput output) {
+        output.accept(params.id, build(), null);
     }
 
     // Datagen shortcuts
@@ -168,12 +162,12 @@ public class ChamberRecipeBuilder {
     }
 
     public ChamberRecipeBuilder topRequire(Mods mod, String id) {
-        params.topIngredients.add(new SimpleDatagenIngredient(mod, id));
+        params.topIngredients.add(Ingredient.EMPTY);
         return this;
     }
 
     public ChamberRecipeBuilder topRequire(ResourceLocation ingredient) {
-        params.topIngredients.add(DataIngredient.ingredient(null, ingredient));
+        params.topIngredients.add(Ingredient.EMPTY);
         return this;
     }
 
@@ -204,12 +198,12 @@ public class ChamberRecipeBuilder {
     }
 
     public ChamberRecipeBuilder bottomRequire(Mods mod, String id) {
-        params.bottomIngredients.add(new SimpleDatagenIngredient(mod, id));
+        params.bottomIngredients.add(Ingredient.EMPTY);
         return this;
     }
 
     public ChamberRecipeBuilder bottomRequire(ResourceLocation ingredient) {
-        params.bottomIngredients.add(DataIngredient.ingredient(null, ingredient));
+        params.bottomIngredients.add(Ingredient.EMPTY);
         return this;
     }
 
@@ -240,12 +234,12 @@ public class ChamberRecipeBuilder {
     }
 
     public ChamberRecipeBuilder catalysts(Mods mod, String id) {
-        params.catalysts.add(new SimpleDatagenIngredient(mod, id));
+        params.catalysts.add(Ingredient.EMPTY);
         return this;
     }
 
     public ChamberRecipeBuilder catalysts(ResourceLocation ingredient) {
-        params.catalysts.add(DataIngredient.ingredient(null, ingredient));
+        params.catalysts.add(Ingredient.EMPTY);
         return this;
     }
 
@@ -287,7 +281,7 @@ public class ChamberRecipeBuilder {
     }
 
     public ChamberRecipeBuilder output(float chance, Mods mod, String id, int amount) {
-        return output(new ProcessingOutput(Pair.of(mod.asResource(id), amount), chance));
+        return output(chance, mod.asResource(id), amount);
     }
 
     public ChamberRecipeBuilder output(Mods mod, String id) {
@@ -295,7 +289,8 @@ public class ChamberRecipeBuilder {
     }
 
     public ChamberRecipeBuilder output(float chance, ResourceLocation registryName, int amount) {
-        return output(new ProcessingOutput(Pair.of(registryName, amount), chance));
+        Item item = BuiltInRegistries.ITEM.getOptional(registryName).orElse(Items.AIR);
+        return output(new ProcessingOutput(new ItemStack(item, amount), chance));
     }
 
     public ChamberRecipeBuilder output(ProcessingOutput output) {
@@ -358,56 +353,4 @@ public class ChamberRecipeBuilder {
 
     }
 
-    public static class DataGenResult implements FinishedRecipe {
-
-        private List<ICondition> recipeConditions;
-        private ChamberRecipeSerializer serializer;
-        private ResourceLocation id;
-        private ChamberRecipe recipe;
-
-        public DataGenResult(ChamberRecipe recipe, List<ICondition> recipeConditions) {
-            this.recipe = recipe;
-            this.recipeConditions = recipeConditions;
-            IRecipeTypeInfo recipeType = this.recipe.getTypeInfo();
-
-            if (!(recipeType.getSerializer() instanceof ChamberRecipeSerializer))
-                throw new IllegalStateException("Cannot datagen ChamberRecipe");
-
-            this.id = recipe.getId();
-            this.serializer = (ChamberRecipeSerializer) recipe.getSerializer();
-        }
-
-        @Override
-        public void serializeRecipeData(JsonObject json) {
-            serializer.write(json, recipe);
-            if (recipeConditions.isEmpty())
-                return;
-
-            JsonArray conds = new JsonArray();
-            recipeConditions.forEach(c -> conds.add(CraftingHelper.serialize(c)));
-            json.add("conditions", conds);
-        }
-
-        @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        public RecipeSerializer<?> getType() {
-            return serializer;
-        }
-
-        @Override
-        public JsonObject serializeAdvancement() {
-            return null;
-        }
-
-        @Override
-        public ResourceLocation getAdvancementId() {
-            return null;
-        }
-
-    }
-    
 }

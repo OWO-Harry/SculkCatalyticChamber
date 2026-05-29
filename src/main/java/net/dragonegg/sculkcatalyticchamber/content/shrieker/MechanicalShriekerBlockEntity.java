@@ -1,20 +1,20 @@
 package net.dragonegg.sculkcatalyticchamber.content.shrieker;
 
-import com.simibubi.create.content.equipment.goggles.IHaveGoggleInformation;
-import com.simibubi.create.foundation.utility.VecHelper;
+import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
+import net.createmod.catnip.math.VecHelper;
 import net.dragonegg.sculkcatalyticchamber.SCCConfig;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberBlockEntity;
 import net.dragonegg.sculkcatalyticchamber.content.chamber.ChamberOperatingBlockEntity;
 import net.dragonegg.sculkcatalyticchamber.registry.RecipeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -40,17 +40,17 @@ public class MechanicalShriekerBlockEntity extends ChamberOperatingBlockEntity i
     }
 
     @Override
-    protected void read(CompoundTag compound, boolean clientPacket) {
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         running = compound.getBoolean("Running");
         runningTicks = compound.getInt("Ticks");
-        super.read(compound, clientPacket);
+        super.read(compound, registries, clientPacket);
     }
 
     @Override
-    public void write(CompoundTag compound, boolean clientPacket) {
+    public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         compound.putBoolean("Running", running);
         compound.putInt("Ticks", runningTicks);
-        super.write(compound, clientPacket);
+        super.write(compound, registries, clientPacket);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class MechanicalShriekerBlockEntity extends ChamberOperatingBlockEntity i
     }
 
     @Override
-    protected <C extends Container> boolean matchStaticFilters(Recipe<C> recipe) {
+    protected boolean matchStaticFilters(Recipe<?> recipe) {
         return recipe.getType() == RecipeRegistry.CHAMBER.getType();
     }
 

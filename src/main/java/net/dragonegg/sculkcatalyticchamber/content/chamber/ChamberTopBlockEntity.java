@@ -14,7 +14,6 @@ public class ChamberTopBlockEntity extends ChamberBlockEntity {
 
     public ChamberTopBlockEntity(BlockEntityType<?> typeIn, BlockPos pos, BlockState state) {
         super(typeIn, pos, state);
-        setCapabilities();
     }
 
     @Override

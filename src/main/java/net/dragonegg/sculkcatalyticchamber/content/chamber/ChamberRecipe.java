@@ -5,39 +5,39 @@ import com.simibubi.create.content.processing.recipe.HeatCondition;
 import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.create.foundation.fluid.FluidIngredient;
 import com.simibubi.create.foundation.item.SmartInventory;
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
-import com.simibubi.create.foundation.utility.Iterate;
+import net.createmod.catnip.data.Iterate;
 import net.dragonegg.sculkcatalyticchamber.registry.RecipeRegistry;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.items.IItemHandler;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.simibubi.create.content.processing.burner.BlazeBurnerBlock.getHeatLevelOf;
 
-public class ChamberRecipe implements Recipe<SmartInventory> {
+public class ChamberRecipe implements Recipe<RecipeInput> {
 
-    private static final Random r = new Random();
+    private static final RandomSource r = RandomSource.create();
 
     protected ResourceLocation id;
     protected NonNullList<Ingredient> topIngredients;
@@ -71,9 +71,9 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
 //        this.processingDuration = params.processingDuration;
         this.requiredHeat = params.requiredHeat;
 
-        this.type = typeInfo.getType();
-        this.serializer = typeInfo.getSerializer();
         this.typeInfo = typeInfo;
+        this.type = null;
+        this.serializer = null;
         this.forcedResult = null;
     }
 
@@ -146,7 +146,7 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         List<ItemStack> results = new ArrayList<>();
         for (int i = 0; i < rollableResults.size(); i++) {
             ProcessingOutput output = rollableResults.get(i);
-            ItemStack stack = i == 0 && forcedResult != null ? forcedResult.get() : output.rollOutput();
+            ItemStack stack = i == 0 && forcedResult != null ? forcedResult.get() : output.rollOutput(r);
             if (!stack.isEmpty())
                 results.add(stack);
         }
@@ -198,12 +198,12 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         if (topBE == null || middleBE == null || bottomBE == null)
             return false;
 
-        IItemHandler availableItemsTop = topBE.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
-        IFluidHandler availableFluidsTop = topBE.getCapability(ForgeCapabilities.FLUID_HANDLER).orElse(null);
-        IItemHandler availableItemsMiddle = middleBE.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
-        IFluidHandler availableFluidsMiddle = middleBE.getCapability(ForgeCapabilities.FLUID_HANDLER).orElse(null);
-        IItemHandler availableItemsBottom = bottomBE.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
-        IFluidHandler availableFluidsBottom = bottomBE.getCapability(ForgeCapabilities.FLUID_HANDLER).orElse(null);
+        IItemHandler availableItemsTop = topBE.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, topBE.getBlockPos(), topBE.getBlockState(), topBE, null);
+        IFluidHandler availableFluidsTop = topBE.getLevel().getCapability(Capabilities.FluidHandler.BLOCK, topBE.getBlockPos(), topBE.getBlockState(), topBE, null);
+        IItemHandler availableItemsMiddle = middleBE.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, middleBE.getBlockPos(), middleBE.getBlockState(), middleBE, null);
+        IFluidHandler availableFluidsMiddle = middleBE.getLevel().getCapability(Capabilities.FluidHandler.BLOCK, middleBE.getBlockPos(), middleBE.getBlockState(), middleBE, null);
+        IItemHandler availableItemsBottom = bottomBE.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, bottomBE.getBlockPos(), bottomBE.getBlockState(), bottomBE, null);
+        IFluidHandler availableFluidsBottom = bottomBE.getLevel().getCapability(Capabilities.FluidHandler.BLOCK, bottomBE.getBlockPos(), bottomBE.getBlockState(), bottomBE, null);
 
         if (availableItemsTop == null || availableFluidsTop == null ||
                 availableItemsMiddle == null || availableFluidsMiddle == null ||
@@ -410,12 +410,12 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
     }
 
     @Override
-    public boolean matches(SmartInventory inv, @Nonnull Level worldIn) {
+    public boolean matches(RecipeInput inv, @Nonnull Level worldIn) {
         return false;
     }
 
     @Override
-    public ItemStack assemble(SmartInventory pContainer, RegistryAccess pRegistryAccess) {
+    public ItemStack assemble(RecipeInput pContainer, HolderLookup.Provider pRegistryAccess) {
         return getResultItem(pRegistryAccess);
     }
 
@@ -425,7 +425,7 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
     }
 
     @Override
-    public ItemStack getResultItem(RegistryAccess pRegistryAccess) {
+    public ItemStack getResultItem(HolderLookup.Provider pRegistryAccess) {
         return getRollableResults().isEmpty() ? ItemStack.EMPTY : getRollableResults().get(0).getStack();
     }
 
@@ -452,18 +452,21 @@ public class ChamberRecipe implements Recipe<SmartInventory> {
         return "chamber";
     }
 
-    @Override
     public ResourceLocation getId() {
         return id;
     }
 
     @Override
     public RecipeSerializer<?> getSerializer() {
+        if (serializer == null)
+            serializer = typeInfo.getSerializer();
         return serializer;
     }
 
     @Override
     public RecipeType<?> getType() {
+        if (type == null)
+            type = typeInfo.getType();
         return type;
     }
 

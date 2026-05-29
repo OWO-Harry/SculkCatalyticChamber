@@ -1,20 +1,20 @@
 package net.dragonegg.sculkcatalyticchamber.content.chamber;
 
-import com.jozufozu.flywheel.util.transform.TransformStack;
+import dev.engine_room.flywheel.lib.transform.TransformStack;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.simibubi.create.AllPartialModels;
 import com.simibubi.create.content.processing.basin.BasinBlock;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock.HeatLevel;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlockEntity;
-import com.simibubi.create.foundation.block.render.SpriteShiftEntry;
+import net.createmod.catnip.render.SpriteShiftEntry;
 import com.simibubi.create.foundation.blockEntity.renderer.SmartBlockEntityRenderer;
-import com.simibubi.create.foundation.render.CachedBufferer;
-import com.simibubi.create.foundation.render.SuperByteBuffer;
-import com.simibubi.create.foundation.utility.AngleHelper;
-import com.simibubi.create.foundation.utility.AnimationTickHolder;
-import com.simibubi.create.foundation.utility.IntAttached;
-import com.simibubi.create.foundation.utility.VecHelper;
+import net.createmod.catnip.render.CachedBuffers;
+import net.createmod.catnip.render.SuperByteBuffer;
+import net.createmod.catnip.math.AngleHelper;
+import net.createmod.catnip.animation.AnimationTickHolder;
+import net.createmod.catnip.data.IntAttached;
+import net.createmod.catnip.math.VecHelper;
 import net.dragonegg.sculkcatalyticchamber.registry.SpriteShiftRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
@@ -66,7 +66,7 @@ public class ChamberBottomRenderer extends SmartBlockEntityRenderer<ChamberBotto
                     continue;
 
                 ms.pushPose();
-                TransformStack.cast(ms)
+                TransformStack.of(ms)
                         .translate(outVec)
                         .translate(new Vec3(0, Math.max(-.55f, -(progress * progress * 2)), 0))
                         .translate(directionVec.scale(progress * .5f))
@@ -118,13 +118,13 @@ public class ChamberBottomRenderer extends SmartBlockEntityRenderer<ChamberBotto
         uScroll = uScroll - Math.floor(uScroll);
         uScroll = uScroll * spriteWidth / 2;
 
-        SuperByteBuffer flameBuffer = CachedBufferer.partial(AllPartialModels.BLAZE_BURNER_FLAME, blockState);
+        SuperByteBuffer flameBuffer = CachedBuffers.partial(AllPartialModels.BLAZE_BURNER_FLAME, blockState);
         flameBuffer.shiftUVScrolling(spriteShift, (float) uScroll, (float) vScroll);
         draw(flameBuffer, horizontalAngle, ms, cutout);
     }
 
     private static void draw(SuperByteBuffer buffer, float horizontalAngle, PoseStack ms, VertexConsumer vc) {
-        buffer.rotateCentered(Direction.UP, horizontalAngle)
+        buffer.rotateCentered(horizontalAngle, Direction.UP)
                 .light(LightTexture.FULL_BRIGHT)
                 .renderInto(ms, vc);
     }

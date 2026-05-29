@@ -14,7 +14,6 @@ public class ChamberMiddleBlockEntity extends ChamberBlockEntity {
 
     public ChamberMiddleBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
-        setCapabilities();
     }
 
     @Override

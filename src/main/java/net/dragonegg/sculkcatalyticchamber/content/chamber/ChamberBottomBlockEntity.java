@@ -12,9 +12,14 @@ import com.simibubi.create.foundation.blockEntity.behaviour.inventory.InvManipul
 import com.simibubi.create.foundation.fluid.CombinedTankWrapper;
 import com.simibubi.create.foundation.item.ItemHelper;
 import com.simibubi.create.foundation.item.SmartInventory;
-import com.simibubi.create.foundation.utility.*;
+import net.createmod.catnip.data.Couple;
+import net.createmod.catnip.data.IntAttached;
+import net.createmod.catnip.data.Iterate;
+import net.createmod.catnip.math.VecHelper;
+import net.createmod.catnip.nbt.NBTHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -36,14 +41,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.items.wrapper.CombinedInvWrapper;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
 
 import java.util.*;
 
@@ -73,7 +77,6 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
         outputInventory.whenContentsChanged($ -> contentsChanged = true);
         invs = Couple.create(inputInventory, outputInventory);
         tanks = Couple.create(inputTank, outputTank);
-        setCapabilities();
         visualizedOutputItems = Collections.synchronizedList(new ArrayList<>());
         visualizedOutputFluids = Collections.synchronizedList(new ArrayList<>());
         disabledSpoutputs = new ArrayList<>();
@@ -95,9 +98,9 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
     }
 
     @Override
-    protected void read(CompoundTag compound, boolean clientPacket) {
-        super.read(compound, clientPacket);
-        outputInventory.deserializeNBT(compound.getCompound("OutputItems"));
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(compound, registries, clientPacket);
+        outputInventory.deserializeNBT(registries, compound.getCompound("OutputItems"));
 
         preferredSpoutput = null;
         if (compound.contains("PreferredSpoutput"))
@@ -105,41 +108,34 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
         disabledSpoutputs.clear();
         ListTag disabledList = compound.getList("DisabledSpoutput", Tag.TAG_STRING);
         disabledList.forEach(d -> disabledSpoutputs.add(Direction.valueOf(((StringTag) d).getAsString())));
-        spoutputBuffer = NBTHelper.readItemList(compound.getList("Overflow", Tag.TAG_COMPOUND));
-        spoutputFluidBuffer = NBTHelper.readCompoundList(compound.getList("FluidOverflow", Tag.TAG_COMPOUND),
-                FluidStack::loadFluidStackFromNBT);
+        spoutputBuffer = NBTHelper.readItemList(compound.getList("Overflow", Tag.TAG_COMPOUND), registries);
+        spoutputFluidBuffer = new ArrayList<>();
 
         if (!clientPacket)
             return;
 
-        NBTHelper.iterateCompoundList(compound.getList("VisualizedItems", Tag.TAG_COMPOUND),
-                c -> visualizedOutputItems.add(IntAttached.with(OUTPUT_ANIMATION_TIME, ItemStack.of(c))));
-        NBTHelper.iterateCompoundList(compound.getList("VisualizedFluids", Tag.TAG_COMPOUND),
-                c -> visualizedOutputFluids
-                        .add(IntAttached.with(OUTPUT_ANIMATION_TIME, FluidStack.loadFluidStackFromNBT(c))));
+        visualizedOutputItems.clear();
+        visualizedOutputFluids.clear();
     }
 
     @Override
-    public void write(CompoundTag compound, boolean clientPacket) {
-        super.write(compound, clientPacket);
-        compound.put("OutputItems", outputInventory.serializeNBT());
+    public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
+        compound.put("OutputItems", outputInventory.serializeNBT(registries));
 
         if (preferredSpoutput != null)
             NBTHelper.writeEnum(compound, "PreferredSpoutput", preferredSpoutput);
         ListTag disabledList = new ListTag();
         disabledSpoutputs.forEach(d -> disabledList.add(StringTag.valueOf(d.name())));
         compound.put("DisabledSpoutput", disabledList);
-        compound.put("Overflow", NBTHelper.writeItemList(spoutputBuffer));
-        compound.put("FluidOverflow",
-                NBTHelper.writeCompoundList(spoutputFluidBuffer, fs -> fs.writeToNBT(new CompoundTag())));
+        compound.put("Overflow", NBTHelper.writeItemList(spoutputBuffer, registries));
+        compound.put("FluidOverflow", new ListTag());
 
         if (!clientPacket)
             return;
 
-        compound.put("VisualizedItems", NBTHelper.writeCompoundList(visualizedOutputItems, ia -> ia.getValue()
-                .serializeNBT()));
-        compound.put("VisualizedFluids", NBTHelper.writeCompoundList(visualizedOutputFluids, ia -> ia.getValue()
-                .writeToNBT(new CompoundTag())));
+        compound.put("VisualizedItems", new ListTag());
+        compound.put("VisualizedFluids", new ListTag());
         visualizedOutputItems.clear();
         visualizedOutputFluids.clear();
     }
@@ -211,7 +207,7 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
                         Collections.emptyList(), false);
         }
 
-        IFluidHandler handler = outputTank.getCapability().orElse(null);
+        IFluidHandler handler = outputTank.getCapability();
         for (int slot = 0; slot < handler.getTanks(); slot++) {
             FluidStack fs = handler.getFluidInTank(slot).copy();
             if (fs.isEmpty())
@@ -257,12 +253,11 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
             filter = null; // Do not test spout outputs against the recipe filter
 
         IItemHandler targetInv = be == null ? null
-                : be.getCapability(ForgeCapabilities.ITEM_HANDLER, direction.getOpposite())
+                : Optional.ofNullable(level.getCapability(Capabilities.ItemHandler.BLOCK, be.getBlockPos(), be.getBlockState(), be, direction.getOpposite()))
                 .orElse(inserter == null ? null : inserter.getInventory());
 
         IFluidHandler targetTank = be == null ? null
-                : be.getCapability(ForgeCapabilities.FLUID_HANDLER, direction.getOpposite())
-                .orElse(null);
+                : level.getCapability(Capabilities.FluidHandler.BLOCK, be.getBlockPos(), be.getBlockState(), be, direction.getOpposite());
 
         boolean update = false;
 
@@ -351,9 +346,9 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
 
     @Override
     public IFluidHandler getTanks() {
-        LazyOptional<? extends IFluidHandler> inputCap = inputTank.getCapability();
-        LazyOptional<? extends IFluidHandler> outputCap = outputTank.getCapability();
-        return new CombinedTankWrapper(outputCap.orElse(null), inputCap.orElse(null));
+        IFluidHandler inputCap = inputTank.getCapability();
+        IFluidHandler outputCap = outputTank.getCapability();
+        return new CombinedTankWrapper(outputCap, inputCap);
     }
 
     @Override
@@ -406,18 +401,17 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
             InvManipulationBehaviour inserter = be == null ? null :
                     BlockEntityBehaviour.get(level, be.getBlockPos(), InvManipulationBehaviour.TYPE);
             IItemHandler targetInv = be == null ? null :
-                    be.getCapability(ForgeCapabilities.ITEM_HANDLER, direction.getOpposite())
+                    Optional.ofNullable(level.getCapability(Capabilities.ItemHandler.BLOCK, be.getBlockPos(), be.getBlockState(), be, direction.getOpposite()))
                             .orElse(inserter == null ? null : inserter.getInventory());
             IFluidHandler targetTank = be == null ? null
-                    : be.getCapability(ForgeCapabilities.FLUID_HANDLER, direction.getOpposite())
-                    .orElse(null);
+                    : level.getCapability(Capabilities.FluidHandler.BLOCK, be.getBlockPos(), be.getBlockState(), be, direction.getOpposite());
             boolean externalTankNotPresent = targetTank == null;
 
             if (!outputItems.isEmpty() && targetInv == null)
                 return false;
             if (!outputFluids.isEmpty() && externalTankNotPresent) {
                 // Special case - fluid outputs but output only accepts items
-                targetTank = outputTank.getCapability().orElse(null);
+                targetTank = outputTank.getCapability();
                 if (targetTank == null)
                     return false;
                 if (!acceptFluidOutputsIntoChamber(outputFluids, simulate, targetTank))
@@ -436,8 +430,7 @@ public class ChamberBottomBlockEntity extends ChamberBlockEntity {
         }
 
         IItemHandler targetInv = outputInventory;
-        IFluidHandler targetTank = outputTank.getCapability()
-                .orElse(null);
+        IFluidHandler targetTank = outputTank.getCapability();
 
         if (targetInv == null && !outputItems.isEmpty())
             return false;

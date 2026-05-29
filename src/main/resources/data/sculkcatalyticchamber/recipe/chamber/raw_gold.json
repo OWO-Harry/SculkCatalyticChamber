@@ -3,7 +3,7 @@
   "heatRequirement": "heated",
   "topIngredients": [
     {
-      "tag": "forge:ingots/iron"
+      "tag": "c:ingots/gold"
     }
   ],
   "bottomIngredients": [
@@ -21,7 +21,7 @@
   "chances": 1.0,
   "results": [
     {
-      "item": "minecraft:raw_iron"
+      "item": "minecraft:raw_gold"
     }
   ]
 }
